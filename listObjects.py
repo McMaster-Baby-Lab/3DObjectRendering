@@ -3,7 +3,7 @@ import bpy
 import csv
 
 # Get the current folder path
-folder_path = os.chdir('/Users/naiqixiao/Downloads/volumetric_shapes/')
+folder_path = os.chdir('/Users/naiqixiao/Downloads/ALL VOMETRIC SHAPES - UPDATED')
 
 # Get a list of files in the current folder
 file_list = os.listdir(folder_path)
@@ -12,9 +12,9 @@ file_list = os.listdir(folder_path)
 fbx_files = [file for file in file_list if file.endswith('.fbx')]
 
 # Create a CSV file to store the object names
-csv_file = open('object_names.csv', 'w', newline='')
+csv_file = open('object_list.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)
-csv_writer.writerow(['FBX File', 'Object Name'])
+csv_writer.writerow(['FBX File', 'Object Name', 'Location', 'Size', 'Rotation'])
 
 # Process each .fbx file
 for fbx_file in fbx_files:
@@ -35,8 +35,12 @@ for fbx_file in fbx_files:
             continue
         print(object_name)
         
+        object_size = obj.dimensions
+        object_location = obj.location
+        object_rotation = obj.rotation_euler
+        
         # Write the FBX file name and object name to the CSV file
-        csv_writer.writerow([fbx_file, object_name])
+        csv_writer.writerow([fbx_file, object_name, [object_location.x, object_location.y, object_location.z], [object_size.x, object_size.y, object_size.z], [object_rotation.x, object_rotation.y, object_rotation.z]])
 
     # Rest of your code...
     # Delete all objects in the scene
