@@ -63,8 +63,24 @@ def create_material(name, color):
     # Create a new material
     material = bpy.data.materials.new(name=name)
     material.use_nodes = True
-    bsdf = material.node_tree.nodes["Principled BSDF"]
-    bsdf.inputs['Base Color'].default_value = color
+
+    nodes = material.node_tree.nodes
+
+    # Clear default nodes
+    nodes.clear()
+
+    bsdf = nodes.new(type='ShaderNodeBsdfHairPrincipled')
+
+    # bsdf = material.node_tree.nodes["Principled Hair BSDF"]
+    bsdf.inputs['Color'].default_value = color
+    bsdf.inputs['Roughness'].default_value = .80
+    bsdf.inputs['Random Roughness'].default_value = .80
+
+    output = nodes.new(type='ShaderNodeOutputMaterial')
+    
+    # Link the Principled Hair BSDF node to the Material Output
+    links = material.node_tree.links
+    link = links.new(bsdf.outputs[0], output.inputs[0])
     return material
 
 # New function to assign unique colors to shown objects
@@ -81,10 +97,12 @@ def assign_materials_to_objects(objects):
             else:
                 obj.data.materials.append(material)
 
-def setup_render_settings(output_path):
+def image_export(output_path):
     scene = bpy.context.scene
     scene.render.image_settings.file_format = 'JPEG'  # Set image format
     scene.render.filepath = output_path  # Set output file path
+    # Render the scene and save the image
+    bpy.ops.render.render(write_still=True)
 
 def setup_camera():
     # Add a new camera
@@ -95,21 +113,55 @@ def setup_camera():
     camera.location = (2.5, 0, 2)
     camera.rotation_euler = (1.0360409021377563, 0.04162178188562393, 0.738756000995636)
 
+    bpy.context.scene.render.resolution_x = 512
+    bpy.context.scene.render.resolution_y = 512
+
+    # Ensure the aspect ratio is 1:1 by setting the pixel aspect ratio
+    bpy.context.scene.render.pixel_aspect_x = 1
+    bpy.context.scene.render.pixel_aspect_y = 1
+
     # Set the camera as the active camera for the scene
     bpy.context.scene.camera = camera
 
 def setup_light():
     # Add a new light
-    bpy.ops.object.light_add(type='SUN')
+    bpy.ops.object.light_add(type='AREA')
     light = bpy.context.object
 
     # Position the light
-    light.location = (-2, -5, 4)
-    light.rotation_euler = (1.0360409021377563, 0.04162178188562393, 0.738756000995636)
-    light.data.energy = 3  # Adjust the energy (brightness) as needed
-    # Configure the light's properties
-#    light.data.size = 30 # Adjust size for softer shadows (larger size = softer shadows)
-#    light.data.shape = 'DISK'  # Disk shape can give a softer effect
+    light.location = (1.7200278043746948, 2.2876501083374023, 2.0)
+    light.rotation_mode = "XYZ"
+    light.rotation_euler = (-0.19239047169685364, 0.9672511219978333, 0.6540918946266174)
+    light.scale = (3.1999998092651367, 3.999999761581421, 2.119999885559082)
+    light.data.energy = 96
+    light.data.size = 0.44905954599380493
+
+    # Add a new light
+    bpy.ops.object.light_add(type='AREA')
+    light = bpy.context.object
+
+    # Position the light
+    light.location = (0.0, -2.4204671382904053, 2.4167652130126953)
+    light.rotation_mode = "XYZ"
+    light.rotation_euler = (0.3550497889518738, -0.7058761715888977, 1.0531928539276123)
+    light.scale = (3.1999998092651367, 3.999999761581421, 2.119999885559082)
+    light.data.energy = 94
+    light.data.size = 0.52
+    light.data.volume_factor = 0.77
+
+    # Add a new light
+    bpy.ops.object.light_add(type='AREA')
+    light = bpy.context.object
+
+    # Position the light
+    light.location = (3.8642451763153076, 0.2624208927154541, -2.152742385864258)
+    light.rotation_mode = "XYZ"
+    light.rotation_euler = (3.4780237674713135, -0.94093257188797, -0.3346114754676819)
+    light.scale = (3.1999998092651367, 3.999999761581421, 2.119999885559082)
+    light.data.energy = 94
+    light.data.size = 1.04
+    light.data.volume_factor = 0.47
+
 
 def set_render_background_color(color):
     # Access the current scene's world settings
@@ -124,12 +176,6 @@ def set_render_background_color(color):
         bg_node.inputs['Color'].default_value = color
 
 def video_export(obj, export_file_name):
-    bpy.context.scene.render.resolution_x = 512
-    bpy.context.scene.render.resolution_y = 512
-
-    # Ensure the aspect ratio is 1:1 by setting the pixel aspect ratio
-    bpy.context.scene.render.pixel_aspect_x = 1
-    bpy.context.scene.render.pixel_aspect_y = 1
 
     # Optional: Update the render resolution percentage to 100%
     bpy.context.scene.render.resolution_percentage = 100
@@ -190,8 +236,14 @@ def video_export(obj, export_file_name):
 
     bpy.context.scene.render.image_settings.file_format = 'FFMPEG'  # 'FFMPEG' for video files
     bpy.context.scene.render.ffmpeg.format = 'MPEG4'  # 'MPEG4' for MP4, 'OGG' for OGV; not directly applicable to GIF
-    bpy.context.scene.render.ffmpeg.codec = 'H264'  # Codec; not used for GIF
+    bpy.context.scene.render.ffmpeg.codec = 'H264'
 
+    # transparent background
+    # bpy.context.scene.render.ffmpeg.format = 'WEBM'  # 'webm' for WEBM
+    # bpy.context.scene.render.ffmpeg.codec = 'WEBM'
+    
+    # bpy.context.scene.render.film_transparent = True
+    
     bpy.context.scene.render.filepath = export_file_name
 
     # Render the scene and save the video
@@ -317,6 +369,11 @@ for i in range(10):
     export_file_name = fbx_file_path + "_" + str(i) + ".mp4"
 
     video_export(parent_obj, export_file_name)
+
+    # # Set the file name based on the object name
+    # export_file_name = fbx_file_path + "_" + str(i) + ".jpg"
+    # image_export(export_file_name)
+
 
 # Delete all objects in the scene
 bpy.ops.object.select_all(action='DESELECT')
