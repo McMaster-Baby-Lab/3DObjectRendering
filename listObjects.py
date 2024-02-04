@@ -2,6 +2,47 @@ import os
 import bpy
 import csv
 
+def scale_object_within_camera_view(obj_name, camera_name, target_size):
+    """
+    Scale an object based on its longest dimension to fit a target size within the camera's view.
+
+    :param obj_name: Name of the object to be scaled.
+    :param camera_name: Name of the camera.
+    :param target_size: Desired size of the object's longest dimension in the camera view.
+    """
+
+    # Ensure the object and camera exist
+    if obj_name not in bpy.data.objects or camera_name not in bpy.data.objects:
+        print("Object or Camera not found.")
+        return
+
+    obj = bpy.data.objects[obj_name]
+    camera = bpy.data.objects[camera_name]
+
+    # Calculate the object's current bounding box size
+    dimensions = obj.dimensions
+    max_dimension = max(dimensions.x, dimensions.y, dimensions.z)
+
+    # Calculate the scaling factor
+    scale_factor = target_size / max_dimension if max_dimension != 0 else 0
+
+    # Scale the object
+    obj.scale *= scale_factor
+
+    # Update the scene
+    bpy.context.view_layer.update()
+
+    # Adjust object position based on camera view
+    location = camera.location
+    direction = mathutils.Vector((0, 0, -1))
+    direction.rotate(camera.rotation_euler)
+
+    # Calculate distance to camera to make the object appear at the target size
+    # This is a simple approximation and might need adjustments
+    distance = (target_size / camera.data.sensor_width) * (location - obj.location).length
+    obj.location = location - direction.normalized() * distance
+
+
 # Get the current folder path
 folder_path = os.chdir('/Users/naiqixiao/Downloads/ALL VOMETRIC SHAPES - UPDATED')
 
